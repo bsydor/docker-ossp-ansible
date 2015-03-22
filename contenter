@@ -1,0 +1,9 @@
+#!/bin/bash
+
+contenter() { nsenter --target $(docker inspect --format {{.State.Pid}} $1) --mount --uts --ipc --net --pid; }
+
+if [ "$#" -ne "1" ]; then
+    echo 'Usage: contenter <CONTAINER_NAME>'
+    exit 1
+fi
+contenter $1

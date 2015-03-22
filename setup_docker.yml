@@ -1,0 +1,42 @@
+- hosts: all
+  vars:
+    rootpw: '$1$DO0/e65T$Y7NYO2zKVSK3F6g.DpHJR1'
+  tasks:
+    - name: Set root pw
+      user: name=root password={{ rootpw }}
+
+    - name: Enable EPEL
+      yum: name=epel-release
+    - name: Enable MariaDB repo
+      copy: src=mariadb.repo dest=/etc/yum.repos.d/mariadb.repo
+
+    - name: Install yum packages
+      yum: name={{ item }}
+      with_items:
+        - python-pip
+        - python-devel
+        - openssl-devel
+        - docker
+        - git
+        - vim
+        - bind-utils
+        - MariaDB-client
+
+    - name: Install pip packages
+      pip: name=fig
+
+    - name: Enable and run docker
+      service: name=docker state=started enabled=yes
+    - name: Get etcd
+      get_url: url=https://github.com/coreos/etcd/releases/download/v0.4.6/etcd-v0.4.6-linux-amd64.tar.gz dest=/opt/etcd-v0.4.6-linux-amd64.tar.gz
+      register: dl_etcd
+
+    - name: Extract etcd
+      command: tar -C /opt -xf /opt/etcd-v0.4.6-linux-amd64.tar.gz
+      when: dl_etcd|changed
+
+    - name: Symlink etcdctl
+      file: src=/opt/etcd-v0.4.6-linux-amd64/etcdctl dest=/usr/bin/etcdctl state=link
+
+    - name: Create contenter script
+      copy: dest=/usr/local/sbin/contenter src=contenter  mode=755
